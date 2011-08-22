@@ -1,0 +1,155 @@
+Terminals unused in grammar
+
+   T_OR
+   T_AND
+   T_NOTEQUAL
+   T_EQUAL
+   T_GREATEREQUAL
+   T_LESSEREQUAL
+   T_GREATER
+   T_LESSER
+   T_MINUS
+   T_PLUS
+   T_NOT
+   T_VAR
+   T_BEGIN
+   T_END
+   T_IF
+   T_THEN
+   T_ELSE
+   T_WHILE
+   T_FOR
+   T_TO
+   T_DO
+   T_ASSIGNMENT
+   T_LPAR
+   T_RPAR
+   T_COLON
+   T_COMMA
+   T_DOT
+   TYPE_IDENTIFIER
+   INT_LITERAL
+   BOOL_LITERAL
+
+
+Grammar
+
+    0 $accept: program $end
+
+    1 program: program_decl
+
+    2 program_decl: T_PROGRAM identifier T_SEMICOLON
+
+    3 identifier: IDENTIFIER
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+T_OR (258)
+T_AND (259)
+T_NOTEQUAL (260)
+T_EQUAL (261)
+T_GREATEREQUAL (262)
+T_LESSEREQUAL (263)
+T_GREATER (264)
+T_LESSER (265)
+T_MINUS (266)
+T_PLUS (267)
+T_NOT (268)
+T_PROGRAM (269) 2
+T_VAR (270)
+T_BEGIN (271)
+T_END (272)
+T_IF (273)
+T_THEN (274)
+T_ELSE (275)
+T_WHILE (276)
+T_FOR (277)
+T_TO (278)
+T_DO (279)
+T_ASSIGNMENT (280)
+T_LPAR (281)
+T_RPAR (282)
+T_SEMICOLON (283) 2
+T_COLON (284)
+T_COMMA (285)
+T_DOT (286)
+TYPE_IDENTIFIER (287)
+IDENTIFIER (288) 3
+INT_LITERAL (289)
+BOOL_LITERAL (290)
+
+
+Nonterminals, with rules where they appear
+
+$accept (36)
+    on left: 0
+program (37)
+    on left: 1, on right: 0
+program_decl (38)
+    on left: 2, on right: 1
+identifier (39)
+    on left: 3, on right: 2
+
+
+state 0
+
+    0 $accept: . program $end
+
+    T_PROGRAM  shift, and go to state 1
+
+    program       go to state 2
+    program_decl  go to state 3
+
+
+state 1
+
+    2 program_decl: T_PROGRAM . identifier T_SEMICOLON
+
+    IDENTIFIER  shift, and go to state 4
+
+    identifier  go to state 5
+
+
+state 2
+
+    0 $accept: program . $end
+
+    $end  shift, and go to state 6
+
+
+state 3
+
+    1 program: program_decl .
+
+    $default  reduce using rule 1 (program)
+
+
+state 4
+
+    3 identifier: IDENTIFIER .
+
+    $default  reduce using rule 3 (identifier)
+
+
+state 5
+
+    2 program_decl: T_PROGRAM identifier . T_SEMICOLON
+
+    T_SEMICOLON  shift, and go to state 7
+
+
+state 6
+
+    0 $accept: program $end .
+
+    $default  accept
+
+
+state 7
+
+    2 program_decl: T_PROGRAM identifier T_SEMICOLON .
+
+    $default  reduce using rule 2 (program_decl)

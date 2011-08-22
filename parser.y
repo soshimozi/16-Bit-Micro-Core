@@ -113,6 +113,7 @@ program:
 
 
 		ast_node_add_child(ast_node, $1); // ProgramDecl
+		ast_node_add_child(ast_node, $2); // VarDeclList
 
 		$$ = ast_node;
 		ast = ast_node; 

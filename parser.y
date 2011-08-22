@@ -188,7 +188,7 @@ multi_identifier:
 	;
 
 single_identifier:
-	identifier { $$ = $1; }
+	identifier { $$ = $1; fprintf(stderr, "identifier!\n");  }
 	;
 
 identifier:

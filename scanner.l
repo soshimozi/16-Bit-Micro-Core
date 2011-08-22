@@ -38,6 +38,7 @@
 			}
 
 "program"		{ uploc; return T_PROGRAM; }		
+"var"			{ uploc; return T_VAR; }
 "integer"|"boolean"	{ uploc; yylval->type = type_get_from_lexeme(yytext); return TYPE_IDENTIFIER;	}
 "begin"			{ uploc; return T_BEGIN; }
 "end"			{ uploc; return T_END; }

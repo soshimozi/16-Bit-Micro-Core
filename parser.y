@@ -11,6 +11,7 @@
 
 
 #include "typecheck_visitor.h"
+#include "graphprinter_visitor.h"
 
 bool simple_flag = FALSE;
 bool graph_flag = FALSE;
@@ -79,6 +80,12 @@ static struct AstNode *ast;
 /* Rule Types */
 %type <astnode> program
 %type <astnode> program_decl
+%type <astnode> vardecl_list
+%type <astnode> multi_vardecl
+%type <astnode> vardecl
+%type <astnode> identifier_list
+%type <astnode> multi_identifier
+%type <astnode> single_identifier
 
 /*
 %type <astnode> vardecl_list
@@ -97,7 +104,7 @@ static struct AstNode *ast;
 %%
 
 program: 
-	program_decl 
+	program_decl vardecl_list 
 	{
 		struct AstNode * ast_node;
 		
@@ -117,13 +124,70 @@ program_decl:
 	{
 		struct AstNode  * ast_node;
 		ast_node = ast_node_new("ProgramDecl", PROGRAM_DECL, VOID,
-					yyloc.last_line, NULL);
+					yylloc.last_line, NULL);
 
 
 
 		ast_node_add_child(ast_node, $2);
 		$$ = ast_node;
 	}
+	;
+
+vardecl_list:
+	/* empty */ { $$ = NULL; }
+	| multi_vardecl
+	{
+		struct AstNode *ast_node;
+		ast_node = ast_node_new("VarDeclList", VARDECL_LIST, VOID,
+					yylloc.last_line, NULL);
+		ast_node_add_child(ast_node, $1);
+		$$ = ast_node;
+	}
+	;
+
+multi_vardecl:
+	/* empty */ { $$ = NULL; }
+	| vardecl multi_vardecl
+	{
+		ast_node_add_sibling($1, $2);
+		$$ = $1;
+	}
+	;
+
+vardecl:
+	T_VAR identifier_list T_COLON TYPE_IDENTIFIER T_SEMICOLON
+	{
+		struct AstNode *ast_node;
+		ast_node = ast_node_new("VarDecl", VARDECL, $4,
+					yylloc.last_line, NULL);
+		ast_node_add_child(ast_node, $2);
+		$$ = ast_node;
+	}
+	;
+
+identifier_list:
+	single_identifier multi_identifier
+	{
+		struct AstNode *ast_node;
+		ast_node = ast_node_new("IdentifierList", IDENT_LIST, VOID,
+					yylloc.last_line, NULL);
+		ast_node_add_sibling($1, $2);	
+		ast_node_add_child(ast_node, $1);	
+		$$ = ast_node;
+	}
+	;
+
+multi_identifier:
+	/* empty */ { $$ = NULL; }
+	| T_COMMA single_identifier multi_identifier
+	{
+		ast_node_add_sibling($2, $3);
+		$$ = $2;
+	}
+	;
+
+single_identifier:
+	identifier { $$ = $1; }
 	;
 
 identifier:

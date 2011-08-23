@@ -102,8 +102,11 @@ static struct AstNode *ast;
 %type <astnode> multi_statement
 %type <astnode> statement
 %type <astnode> statement_matched
-/*%type <astnode> statement_unmatched*/
+%type <astnode> statement_unmatched
+%type <astnode> if_statement
+%type <astnode> if_statement_matched
 
+%type <astnode> statements
 %type <astnode> expression
 %type <astnode> simple_expression
 %type <astnode> not_factor
@@ -193,6 +196,11 @@ program_body:
 	| T_BEGIN statement_list T_END T_DOT { $$ = $2; }
 	;
 
+statements:
+    statement { $$ = $1; }
+    | T_BEGIN statement_list T_END { $$ = $2; }
+    ;
+
 statement_list:
 	/* empty */ { $$ = NULL; }
 	| statement multi_statement
@@ -217,12 +225,52 @@ multi_statement:
 
 statement:
 	statement_matched { $$ = $1; }
+	| statement_unmatched { $$ = $1 }
 	| { $$ = NULL }
-/*	| statement_unmatched { $$ = $1 } */
 	;
 
 statement_matched:
 	assignment { $$ = $1; }
+	| if_statement_matched { $$ = $1; }
+	;
+
+statement_unmatched:
+	if_statement { $$ = $1; }
+	| T_IF expression T_THEN statement_matched T_ELSE statement_unmatched
+	{
+		struct AstNode *ast_node;
+		ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
+					yylloc.last_line, NULL);
+		ast_node_add_child(ast_node, $2);
+		ast_node_add_child(ast_node, $4);
+		ast_node_add_child(ast_node, $6);
+		$$ = ast_node;
+	}
+	;
+
+if_statement:
+	T_IF expression T_THEN statements
+	{
+		struct AstNode *ast_node;
+		ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
+					yylloc.last_line, NULL);
+		ast_node_add_child(ast_node, $2);
+		ast_node_add_child(ast_node, $4);
+		$$ = ast_node;
+	}
+	;
+
+if_statement_matched:
+	T_IF expression T_THEN statement_matched T_ELSE statement_matched
+	{
+		struct AstNode *ast_node;
+		ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
+					yylloc.last_line, NULL);
+		ast_node_add_child(ast_node, $2);
+		ast_node_add_child(ast_node, $4);
+		ast_node_add_child(ast_node, $6);
+		$$ = ast_node;
+	}
 	;
 
 assignment:

@@ -13,6 +13,7 @@ static Symbol *global_symtab;
 Visitor *typecheck_new();
 
 void typecheck_visit_program (struct _Visitor *, struct AstNode *);
+void typecheck_visit_programdecl (struct _Visitor *, struct AstNode *);
 void typecheck_visit_vardecl_list (struct _Visitor *, struct AstNode *);
 void typecheck_visit_vardecl (struct _Visitor *, struct AstNode *);
 void typecheck_visit_statement_list (struct _Visitor *, struct AstNode *);

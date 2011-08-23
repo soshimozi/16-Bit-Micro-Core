@@ -12,6 +12,7 @@ typecheck_new()
     Visitor *visitor = (Visitor *) malloc (sizeof(Visitor));
 
     visitor->visit_program = &typecheck_visit_program;
+    visitor->visit_programdecl = &typecheck_visit_programdecl;
     visitor->visit_vardecl_list = &typecheck_visit_vardecl_list;
     visitor->visit_vardecl = &typecheck_visit_vardecl;
     visitor->visit_statement_list = &typecheck_visit_statement_list;
@@ -32,7 +33,6 @@ typecheck_new()
     return visitor;
 }
 
-
 void
 typecheck_visit_program(struct _Visitor *visitor, struct AstNode *node)
 {
@@ -43,6 +43,13 @@ typecheck_visit_program(struct _Visitor *visitor, struct AstNode *node)
 	symtab = global_symtab;
 	_inside_procfunc = NULL;
 	ast_node_accept_children(node->children, visitor);
+}
+
+void
+typecheck_visit_programdecl (struct _Visitor *visitor, struct AstNode *node)
+{
+    node->children->symbol->decl_linenum = node->linenum;
+    ast_node_accept(node->children, visitor);
 }
 
 void
@@ -68,7 +75,7 @@ void typecheck_visit_statement_list(struct _Visitor *visitor, struct AstNode *no
 void typecheck_visit_assignment_stmt(struct _Visitor *visitor, struct AstNode *node)
 {
 	struct AstNode *lnode = node->children;
-	struct AstNode *rnode = node->sibling;
+	struct AstNode *rnode = lnode->sibling;
 
 	ast_node_accept(lnode, visitor);
 	ast_node_accept(rnode, visitor);

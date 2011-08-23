@@ -125,7 +125,6 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
 
     self->child_counter = 1;
 
-	fprintf(stderr, "About to accept node %s, kind is %d\n", self->name, self->kind);
 
     switch (self->kind) {
         case PROGRAM:
@@ -202,7 +201,6 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
 
     if (visit != NULL)
         visit(visitor, self);
-   else fprintf(stderr, "Invalid visitor: %d for %s!\n", self->kind, self->name);
 }
 
 void

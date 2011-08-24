@@ -123,6 +123,16 @@ static struct AstNode *ast;
 %type <astnode> mulop
 
 
+%type <astnode> statment_part
+%type <astnode> compound_statement
+%type <astnode> statement_sequence
+%type <astnode> open_statement
+%type <astnode> closed_statement
+%type <astnode> non_labeled_open_statement
+%type <astnode> non_labeled_closed_statement
+%type <astnode> closed_if_statement
+%type <astnode> open_if_statement
+
 %start program
 
 %%
@@ -193,9 +203,28 @@ vardecl:
 
 program_body:
 	/* empty */ { $$ = NULL; }
-	| T_BEGIN statement_list T_END T_DOT { $$ = $2; }
+/*	| T_BEGIN statement_list T_END T_DOT { $$ = $2; } */
+	| statement_part T_DOT { $$ = $2; }
 	;
 
+
+statement_part : compound_statement ;
+
+compound_statement : T_BEGIN statement_sequence T_END;
+
+statement_sequence:
+	statement_sequence semicolon statement
+	| statement
+	;
+
+statment : open_statement
+	| close_statement
+	;
+
+open_statement: 
+
+
+/* old old old */
 statements:
     statement { $$ = $1; }
     | T_BEGIN statement_list T_END { $$ = $2; }
@@ -223,11 +252,12 @@ multi_statement:
 	}
 	;
 
-statement:
+/*statement:
 	statement_matched { $$ = $1; }
 	| statement_unmatched { $$ = $1 }
 	| { $$ = NULL }
 	;
+*/
 
 statement_matched:
 	assignment { $$ = $1; }

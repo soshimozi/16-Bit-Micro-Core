@@ -3,26 +3,19 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-
 #include "base.h"
 #include "parser.h"
 #include "ast.h"
 #include "symbol_table.h"
 
-
 #include "typecheck_visitor.h"
 #include "graphprinter_visitor.h"
 
-bool simple_flag = FALSE;
-bool graph_flag = FALSE;
-bool c_flag = FALSE;
-bool llvm_flag = FALSE;
 
-int opts;
 
 extern FILE *yyin;
 
-static void yyerror(/*YYLTYPE *locp, */const char *msg);
+static void yyerror( const char *msg );
 
 static struct AstNode *ast;
 
@@ -33,145 +26,82 @@ static struct AstNode *ast;
 %pure-parser
 %error-verbose
 
-
 %union {
-	char *lexeme;
+	char* lexeme;
 	int integer;
 	int boolean;
+	char character;
 	int type;
 	struct AstNode *astnode;
-}
+};
 
-/* Tokens */
-%left <lexeme> T_OR
-%left <lexeme> T_AND
-%left <lexeme> T_EQUAL T_NOTEQUAL
-%left <lexeme> T_LESSER T_GREATER T_LESSEREQUAL T_GREATEREQUAL
-%left <lexeme> T_PLUS T_MINUS
-%left <lexeme> T_NOT
-
-%token T_PROGRAM
-%token T_VAR
-%token T_BEGIN
-%token T_END
-
-%token T_IF
-%token T_THEN
-%token T_ELSE
-%token T_WHILE
-%token T_FOR
-%token T_TO
-%token T_DO
-
-%token T_ASSIGNMENT
-
-%token T_LPAR
-%token T_RPAR
-%token T_SEMICOLON
-%token T_COLON
-%token T_COMMA
-%token T_DOT
-
-%token <type> TYPE_IDENTIFIER
 %token <lexeme> IDENTIFIER
+%token <type> TYPE_IDENTIFIER
 %token <integer> INT_LITERAL
 %token <boolean> BOOL_LITERAL
+%token <character> CHAR_LITERAL
 
-/* Rule Types */
+%token T_WHILE T_IF T_PROGRAM T_FUNCTION T_COLON T_PROC
+%token T_COMMA T_SEMICOLON T_LBRACE T_RBRACE T_LPAR T_RPAR
+%token T_DO T_DOT T_ASSIGN
+%nonassoc IFX
+%nonassoc T_ELSE
+
+%left <lexeme> T_BITOR
+%left <lexeme> T_LOGICOR
+%left <lexeme> T_BITAND
+%left <lexeme> T_LOGICAND
+%left <lexeme> T_EQ T_NE
+%left <lexeme> T_LT T_GT T_LE T_GE
+%left <lexeme> T_PLUS T_MINUS
+%left <lexeme> T_STAR T_SLASH
+%nonassoc UMINUS
+
 %type <astnode> program
+%type <astnode> ident
 %type <astnode> program_decl
-%type <astnode> vardecl_list
-%type <astnode> multi_vardecl
-%type <astnode> vardecl
-%type <astnode> identifier_list
-%type <astnode> multi_identifier
+%type <astnode> var_decl_list
+%type <astnode> multi_var_decl
+%type <astnode> var_decl
+%type <astnode> identlist
 %type <astnode> single_identifier
-
-/*
-%type <astnode> vardecl_list
-%type <astnode> multi_vardecl
-%type <astnode> vardecl
-%type <astnode> identifier_list
 %type <astnode> multi_identifier
-%type <astnode> single_identifier
-*/
 
+%type <astnode> proc_func_list
+%type <astnode> multi_proc_func_decl
+%type <astnode> proc_func_decl
+%type <astnode> func_decl
+%type <astnode> proc_decl
 
-%type <astnode> program_body
-%type <astnode> statement_list
-%type <astnode> multi_statement
-%type <astnode> statement
-%type <astnode> statement_matched
-%type <astnode> statement_unmatched
-%type <astnode> if_statement
-%type <astnode> if_statement_matched
+%type <astnode> param_list
+%type <astnode> single_param
+%type <astnode> multi_param
 
-%type <astnode> statements
-%type <astnode> expression
-%type <astnode> simple_expression
-%type <astnode> not_factor
-%type <astnode> factor
-%type <astnode> term
-
-%type <astnode> assignment
-%type <astnode> identifier
-%type <astnode> literal
-
-%type <astnode> addop
-%type <astnode> relop
-%type <astnode> notop
-%type <astnode> mulop
-
-
-%type <astnode> statment_part
-%type <astnode> compound_statement
-%type <astnode> statement_sequence
-%type <astnode> open_statement
-%type <astnode> closed_statement
-%type <astnode> non_labeled_open_statement
-%type <astnode> non_labeled_closed_statement
-%type <astnode> closed_if_statement
-%type <astnode> open_if_statement
+%type <type> type
 
 %start program
 
 %%
 
-program: 
-	program_decl vardecl_list program_body 
+program:
+	program_decl var_decl_list proc_func_list statement_block
 	{
-		struct AstNode * ast_node;
-		
+		struct AstNode *ast_node;
 		ast_node = ast_node_new("Program", PROGRAM, VOID,
-					yyloc.last_line, NULL);
-
-
-		ast_node_add_child(ast_node, $1); // ProgramDecl
-		ast_node_add_child(ast_node, $2); // VarDeclList
-		ast_node_add_child(ast_node, $3); // program_body
-
-		$$ = ast_node;
-		ast = ast_node; 
-	}
-	;
-
-program_decl:
-	T_PROGRAM identifier T_SEMICOLON
-	{
-		struct AstNode  * ast_node;
-		ast_node = ast_node_new("ProgramDecl", PROGRAM_DECL, VOID,
 					yylloc.last_line, NULL);
-
-
-
-		ast_node_add_child(ast_node, $2);
+		ast_node_add_child(ast_node, $1); // program_decl
+		ast_node_add_child(ast_node, $2); // var_decl_list
+		ast_node_add_child(ast_node, $3); // proc_func_list
 		$$ = ast_node;
+
+		ast = ast_node;
+		//ast_node_add_child(ast_node, $3); // statement_block
 	}
 	;
 
-vardecl_list:
+var_decl_list:
 	/* empty */ { $$ = NULL; }
-	| multi_vardecl
+	| multi_var_decl
 	{
 		struct AstNode *ast_node;
 		ast_node = ast_node_new("VarDeclList", VARDECL_LIST, VOID,
@@ -181,61 +111,113 @@ vardecl_list:
 	}
 	;
 
-multi_vardecl:
-	/* empty */ { $$ = NULL; }
-	| vardecl multi_vardecl
+multi_var_decl:
+	var_decl { $$ = $1; } 
+	| var_decl multi_var_decl
 	{
 		ast_node_add_sibling($1, $2);
 		$$ = $1;
 	}
 	;
 
-vardecl:
-	T_VAR identifier_list T_COLON TYPE_IDENTIFIER T_SEMICOLON
+var_decl:
+	type identlist T_SEMICOLON
+	{
+	        struct AstNode *ast_node;
+        	ast_node = ast_node_new("VarDecl", VARDECL, $1,
+                                	yylloc.last_line, NULL);
+	        ast_node_add_child(ast_node, $2);
+	        $$ = ast_node;
+	}
+	;
+
+proc_func_list:
+	/* empty */ { $$ = NULL; }
+	| proc_func_decl multi_proc_func_decl
 	{
 		struct AstNode *ast_node;
-		ast_node = ast_node_new("VarDecl", VARDECL, $4,
+		ast_node = ast_node_new("ProcFuncList", PROCFUNC_LIST, VOID,
 					yylloc.last_line, NULL);
-		ast_node_add_child(ast_node, $2);
+		ast_node_add_sibling($1, $2);
+		ast_node_add_child(ast_node, $1);
+
 		$$ = ast_node;
 	}
 	;
 
-program_body:
+multi_proc_func_decl:
 	/* empty */ { $$ = NULL; }
-/*	| T_BEGIN statement_list T_END T_DOT { $$ = $2; } */
-	| statement_part T_DOT { $$ = $2; }
+	| proc_func_decl multi_proc_func_decl
+	{
+		ast_node_add_sibling($1, $2);
+	}
 	;
 
-
-statement_part : compound_statement ;
-
-compound_statement : T_BEGIN statement_sequence T_END;
-
-statement_sequence:
-	statement_sequence semicolon statement
-	| statement
+proc_func_decl:
+	proc_decl { $$ = $1; }
+	| func_decl { $$ = $1; }
 	;
 
-statment : open_statement
-	| close_statement
+func_decl:
+	T_FUNCTION ident T_LPAR param_list T_RPAR T_COLON type T_LBRACE var_decl_list statement_block T_RBRACE
+	{	
+		Symbol *symtab;
+		struct AstNode *ast_node;
+		
+		ast_node = ast_node_new("FuncDecl", FUNCTION, VOID,
+					yylloc.last_line, NULL);
+	
+		ast_node_add_child(ast_node, $2);	// Identifier
+		ast_node_add_child(ast_node, $4);	// ParamList
+		ast_node_add_child(ast_node, $9);	// VarDeclList
+		//ast_node_add_child(ast_node, $9);	// Statements
+
+		$2->symbol->type = $7;
+
+		ast_node->symbol = symbol_new(NULL);
+		
+		$$ = ast_node;	
+	}
 	;
 
-open_statement: 
+proc_decl:
+	T_PROC ident T_LPAR param_list T_RPAR T_LBRACE var_decl_list statement_block T_RBRACE
+	{
+		Symbol *symtab;
+		struct AstNode *ast_node;
+		
+		ast_node = ast_node_new("ProcDecl", PROCEDURE, VOID,
+					yylloc.last_line, NULL);
+	
+		ast_node_add_child(ast_node, $2);	// Identifier
+		//ast_node_add_child(ast_node, $4);	// ParamList
+		ast_node_add_child(ast_node, $7);	// VarDeclList
+		//ast_node_add_child(ast_node, $9);	// Statements
 
+		ast_node->symbol = symbol_new(NULL);
+		
+		$$ = ast_node;
+	}
+	;
+	
+program_decl:
+	T_PROGRAM ident T_SEMICOLON
+	{  
+		struct AstNode *ast_node;
+		
+		ast_node = ast_node_new("ProgramDecl", PROGRAM_DECL, VOID,
+					yylloc.last_line, NULL);
+		ast_node_add_child(ast_node, $2); /* identifier */
+		$$ = ast_node;
+	}
+	;
 
-/* old old old */
-statements:
-    statement { $$ = $1; }
-    | T_BEGIN statement_list T_END { $$ = $2; }
-    ;
-
-statement_list:
+param_list:
 	/* empty */ { $$ = NULL; }
-	| statement multi_statement
+	| single_param multi_param
 	{
 		struct AstNode *ast_node;
-		ast_node = ast_node_new("StatementList", STATEMENT_LIST, VOID,
+		ast_node = ast_node_new("ParamList", PARAM_LIST, VOID,
 					yylloc.last_line, NULL);
 		ast_node_add_sibling($1, $2);
 		ast_node_add_child(ast_node, $1);
@@ -243,153 +225,36 @@ statement_list:
 	}
 	;
 
-multi_statement:
+multi_param:
 	/* empty */ { $$ = NULL; }
-	| T_SEMICOLON statement multi_statement
+	| T_COMMA single_param multi_param
 	{
 		ast_node_add_sibling($2, $3);
 		$$ = $2;
 	}
 	;
+	
 
-/*statement:
-	statement_matched { $$ = $1; }
-	| statement_unmatched { $$ = $1 }
-	| { $$ = NULL }
-	;
-*/
-
-statement_matched:
-	assignment { $$ = $1; }
-	| if_statement_matched { $$ = $1; }
-	;
-
-statement_unmatched:
-	if_statement { $$ = $1; }
-	| T_IF expression T_THEN statement_matched T_ELSE statement_unmatched
+single_param:
+	type ident
 	{
 		struct AstNode *ast_node;
-		ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
+		ast_node = ast_node_new("Parameter", PARAMETER, $1,
 					yylloc.last_line, NULL);
-		ast_node_add_child(ast_node, $2);
-		ast_node_add_child(ast_node, $4);
-		ast_node_add_child(ast_node, $6);
+		ast_node_add_child(ast_node, $2);	// Identifier
 		$$ = ast_node;
 	}
 	;
 
-if_statement:
-	T_IF expression T_THEN statements
-	{
-		struct AstNode *ast_node;
-		ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
-					yylloc.last_line, NULL);
-		ast_node_add_child(ast_node, $2);
-		ast_node_add_child(ast_node, $4);
-		$$ = ast_node;
-	}
-	;
-
-if_statement_matched:
-	T_IF expression T_THEN statement_matched T_ELSE statement_matched
-	{
-		struct AstNode *ast_node;
-		ast_node = ast_node_new("IfStatement", IF_STMT, VOID,
-					yylloc.last_line, NULL);
-		ast_node_add_child(ast_node, $2);
-		ast_node_add_child(ast_node, $4);
-		ast_node_add_child(ast_node, $6);
-		$$ = ast_node;
-	}
-	;
-
-assignment:
-	identifier T_ASSIGNMENT expression
-	{
-		struct AstNode *ast_node;
-		ast_node = ast_node_new("Assignment", ASSIGNMENT_STMT, VOID,
-					yylloc.last_line, NULL);
-		ast_node_add_child(ast_node, $1);
-		ast_node_add_child(ast_node, $3);
-		$$ = ast_node;
-	}
-	;
-
-expression:
-	simple_expression { $$ = $1; }
-	| simple_expression relop simple_expression
-	{
-		struct AstNode *ast_node;
-		ast_node = ast_node_new("RelExpression", REL_EXPR, BOOLEAN,
-					yylloc.last_line, NULL);
-		ast_node_add_child(ast_node, $1);
-		ast_node_add_child(ast_node, $2);
-		ast_node_add_child(ast_node, $3);
-		$$ = ast_node;
-	}
-	;
-
-simple_expression:
-	term { $$ = $1; }
-	| simple_expression addop term
-	{
-		struct AstNode *ast_node;
-		Type type = ((struct AstNode *) $2)->type;
-		
-		ast_node = ast_node_new("AddExpression", ADD_EXPR, type,
-					yylloc.last_line, NULL);
-		ast_node_add_child(ast_node, $1);
-		ast_node_add_child(ast_node, $2);
-		ast_node_add_child(ast_node, $3);
-		$$ = ast_node;
-	}
-	;
-
-term:
-	not_factor { $$ = $1; }
-	| term mulop not_factor
-	{
-		struct AstNode *ast_node;
-		Type type = ((struct AstNode *) $2)->type;
-		
-		ast_node = ast_node_new("MulExpression", MUL_EXPR, type,
-					yylloc.last_line, NULL);
-
-		ast_node_add_child(ast_node, $1);
-		ast_node_add_child(ast_node, $2);
-		ast_node_add_child(ast_node, $3);
-		$$ = ast_node;
-    	}	
-    	;
-
-not_factor:
-    factor { $$ = $1; }
-    | notop factor
-    {
-        struct AstNode *ast_node;
-        struct AstNode *op_ast_node;
-        ast_node = ast_node_new("NotFactor", NOTFACTOR, BOOLEAN,
-                                yylloc.last_line, NULL);
-        ast_node_add_child(ast_node, $2);
-        $$ = ast_node;
-    }
-    ;
-
-factor:
-    identifier { $$ = $1; }
-    | literal { $$ = $1; }
-/*    | Call { $$ = $1; }*/
-    | T_LPAR expression T_RPAR { $$ = $2; }
-    ;
-
-identifier_list:
+identlist:
 	single_identifier multi_identifier
 	{
 		struct AstNode *ast_node;
+
 		ast_node = ast_node_new("IdentifierList", IDENT_LIST, VOID,
 					yylloc.last_line, NULL);
-		ast_node_add_sibling($1, $2);	
-		ast_node_add_child(ast_node, $1);	
+		ast_node_add_sibling($1, $2);
+		ast_node_add_child(ast_node, $1);
 		$$ = ast_node;
 	}
 	;
@@ -404,209 +269,100 @@ multi_identifier:
 	;
 
 single_identifier:
-	identifier { $$ = $1; }
+	ident { $$ = $1; }
 	;
 
-identifier:
-	IDENTIFIER
+ident:
+	IDENTIFIER 
 	{
 		struct AstNode *ast_node;
 	
-		ast_node = ast_node_new("Identifier", IDENTIFIER, VOID,
-					yyloc.last_line, NULL);
+		ast_node = ast_node_new("Identifier", IDENTIFIER, VOID,	
+					yylloc.last_line, NULL);
 		ast_node->symbol = symbol_new($1);
-		// ast_node->symbol_decl_linenum = yyloc.last_line;
-		$$ = ast_node;
+		// ast-node->symbol->decl_linenum = yylloc.last_line;
+		$$ = ast_node;	 
 	}
 	;
 
-addop:
-    T_PLUS
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_PLUS, INTEGER,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    | T_MINUS
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_MINUS, INTEGER,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    | T_OR
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_OR, BOOLEAN,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    ;
 
-mulop:
-/*    T_STAR
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_STAR, INTEGER,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    | T_SLASH
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_SLASH, INTEGER,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    | */
-    T_AND
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_AND, BOOLEAN,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    ;
+statement_block:
+	statement_block stmt
+	|
+	/* empty */
+	;
+	
+type:	TYPE_IDENTIFIER 
+	;
+	
+stmt:
+	T_SEMICOLON			{ }
+	| expr T_SEMICOLON		{ }
+	| IDENTIFIER T_ASSIGN expr T_SEMICOLON { }
+	| T_WHILE T_LPAR expr T_RPAR stmt 
+				{ }
+	| T_DO stmt T_WHILE T_LPAR expr T_RPAR T_SEMICOLON { }
+	| T_IF T_LPAR expr T_RPAR stmt %prec IFX 
+				{ }
+	| T_IF T_LPAR expr T_RPAR stmt T_ELSE stmt
+				{ }
+	| T_LBRACE stmt_list T_RBRACE	{ }
+	;
 
-relop:
-    T_LESSER
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_LESSER, BOOLEAN,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    | T_LESSEREQUAL
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_LESSEREQUAL, BOOLEAN,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    | T_GREATER
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_GREATER, BOOLEAN,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    | T_GREATEREQUAL
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_GREATEREQUAL, BOOLEAN,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    | T_EQUAL
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_EQUAL, BOOLEAN,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    | T_NOTEQUAL
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new($1, T_NOTEQUAL, BOOLEAN,
-                                yylloc.last_line, NULL);
-        $$ = ast_node;
-    }
-    ;
+stmt_list:
+	stmt	{ }
+	| stmt_list stmt { }
+	;
 
-notop:
-    T_NOT { $$ = NULL; }
-    ;
-
-literal:
-    INT_LITERAL
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new("IntLiteral", INT_LITERAL, INTEGER,
-                                yylloc.last_line, NULL);
-        value_set_from_int(&ast_node->value, $1);
-        $$ = ast_node;
-    }
-    | BOOL_LITERAL
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new("BoolLiteral", BOOL_LITERAL, BOOLEAN,
-                                yylloc.last_line, NULL);
-        value_set_from_bool(&ast_node->value, $1);
-        $$ = ast_node;
-    }
-/*(    | CHAR_LITERAL
-    {
-        struct AstNode *ast_node;
-        ast_node = ast_node_new("CharLiteral", CHAR_LITERAL, CHAR,
-                                yylloc.last_line, NULL);
-        value_set_from_char(&ast_node->value, $1);
-        $$ = ast_node;
-    }*/
-    ;
-
+expr:
+	INT_LITERAL		{ }
+	| CHAR_LITERAL 		{ }
+	| BOOL_LITERAL		{ }
+	| IDENTIFIER		{ }
+	| T_MINUS expr %prec UMINUS { }
+	| expr T_PLUS expr		{ }
+	| expr T_MINUS expr		{ }
+	| expr T_STAR expr		{ }
+	| expr T_SLASH expr		{ }
+	| expr T_LT expr		{ }
+	| expr T_GT expr		{ }
+	| expr T_GE expr		{ }
+	| expr T_LE expr		{ }
+	| expr T_NE expr		{ }
+	| expr T_EQ expr		{ }
+	| T_LPAR expr T_RPAR		{ }
+	;
 %%
 
-static void
-yyerror (/*YYLTYPE *locp,*/ const char *msg)
+static void yyerror(const char *msg)
 {
-	fprintf(stderr, "Error: line %d: %s\n", yyget_lineno(), msg);
+	fprintf(stderr, "Error(%d): %s\n", yyget_lineno(),  msg);
 }
 
 int main(int argc, char **argv)
 {
-	Visitor *visitor;
-	
-	opterr = 0;
-
-	while ((opts = getopt (argc, argv, "sgcl")) != -1) {
-		switch (opts) {
-			case 's':
-				simple_flag = TRUE;
-				break;
-			case 'g':
-				graph_flag = TRUE;
-				break;
-			case 'c':
-				c_flag = TRUE;
-				break;
-			case '?':
-		                if (optopt == 'o')
-                		    fprintf (stderr, "Option -%c requires an argument.\n",
-		                             optopt);
-                		else if (isprint (optopt))
-		                    fprintf (stderr, "Unknown option `-%c'.\n", optopt);
-                		else
-		                    fprintf (stderr,
-                		             "Unknown option character `\\x%x'.\n", optopt);
-		}
-	}
-
-	if (argc > optind)
-		yyin = fopen(argv[optind], "r");
+	if (argc > 1)
+		yyin = fopen(argv[1], "r");
 	else
 		yyin = stdin;
 
+	/*yylloc.first_line = yylloc.last_line = 1;
+	yylloc.first_column = yylloc.last_column = 0;*/
+
 	yyparse();
 
-	// verify types
+	Visitor *visitor;
+
 	visitor = typecheck_new();
 	ast_node_accept(ast, visitor);
-
-	if (ast_node_check_errors(ast)) {
-		fprintf(stderr, "Too many errors to compile.\n");
-		return 1;
-	}	
-
-	if (graph_flag) {
-		visitor = graphprinter_new();
-	} else 
-		visitor = NULL;
-
-	if (visitor != NULL) 
-		ast_node_accept(ast, visitor);
-
 	
+	if(ast_node_check_errors(ast)) {
+		fprintf(stderr, "Too many errors to compile.\n");
+	}
+
+	visitor = graphprinter_new();
+
+	ast_node_accept(ast, visitor);
+
 	return 0;
 }
-

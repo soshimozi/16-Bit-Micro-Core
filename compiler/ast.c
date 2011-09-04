@@ -2,32 +2,32 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ast.h"
-#include "typecheck_visitor.h"
+//#include "typecheck_visitor.h"
 
 struct AstNode *
 ast_node_new(const char* name, int kind, int type,
-		int linenum, Symbol *symbol)
+             int linenum, Symbol *symbol)
 {
-	int i;
-	struct AstNode *node;
-	
-	node = (struct AstNode *) malloc (sizeof(struct AstNode));
+    int i;
+    struct AstNode *node;
 
-	if (name != NULL) {
-		node->name = strdup(name);
-	} else
-		node->name = NULL;
+    node = (struct AstNode *) malloc (sizeof(struct AstNode));
 
-	node->kind = kind;
-	node->type = type;
-	node->linenum = linenum;
-	node->child_counter = 0;
-	node->symbol = symbol;
-	node->parent = NULL;
-	node->children = NULL;
-	node->sibling = NULL;
-	
-	return node;
+    if (name != NULL){
+        node->name = strdup(name);
+    } else
+        node->name = NULL;
+
+    node->kind = kind;
+    node->type = type;
+    node->linenum = linenum;
+    node->child_counter = 0;
+    node->symbol = symbol;
+    node->parent = NULL;
+    node->children = NULL;
+    node->sibling = NULL;
+
+    return node;
 }
 
 void
@@ -115,6 +115,7 @@ ast_node_add_sibling(struct AstNode *self, struct AstNode *sibling)
     }
 }
 
+
 void
 ast_node_accept(struct AstNode *self, Visitor *visitor)
 {
@@ -125,14 +126,13 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
 
     self->child_counter = 1;
 
-
     switch (self->kind) {
         case PROGRAM:
             visit = visitor->visit_program;
             break;
-	case PROGRAM_DECL:
-	     visit = visitor->visit_programdecl;
-	     break;
+        case PROGRAM_DECL:
+            visit = visitor->visit_programdecl;
+            break;
         case VARDECL_LIST:
             visit = visitor->visit_vardecl_list;
             break;
@@ -142,8 +142,35 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
         case IDENT_LIST:
             visit = visitor->visit_identifier_list;
             break;
+        case PROCFUNC_LIST:
+            visit = visitor->visit_procfunc_list;
+            break;
+        case PROCEDURE:
+            visit = visitor->visit_procedure;
+            break;
+        case FUNCTION:
+            visit = visitor->visit_function;
+            break;
+        case PARAM_LIST:
+            visit = visitor->visit_param_list;
+            break;
+        case PARAMETER:
+            visit = visitor->visit_parameter;
+            break;
         case STATEMENT_LIST:
             visit = visitor->visit_statement_list;
+            break;
+        case PRINTINT_STMT:
+            visit = visitor->visit_printint_stmt;
+            break;
+        case PRINTCHAR_STMT:
+            visit = visitor->visit_printchar_stmt;
+            break;
+        case PRINTBOOL_STMT:
+            visit = visitor->visit_printbool_stmt;
+            break;
+        case PRINTLINE_STMT:
+            visit = visitor->visit_printline_stmt;
             break;
         case ASSIGNMENT_STMT:
             visit = visitor->visit_assignment_stmt;
@@ -169,31 +196,42 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
         case NOTFACTOR:
             visit = visitor->visit_notfactor;
             break;
+        case CALL:
+            visit = visitor->visit_call;
+            break;
+        case CALLPARAM_LIST:
+            visit = visitor->visit_callparam_list;
+            break;
+        case CALLPARAM:
+            visit = visitor->visit_callparam;
+            break;
         case IDENTIFIER:
             visit = visitor->visit_identifier;
             break;
         case INT_LITERAL:
         case BOOL_LITERAL:
+        case CHAR_LITERAL:
             visit = visitor->visit_literal;
             break;
         case T_PLUS:
         case T_MINUS:
-        case T_OR:
+        case T_LOGICOR:
+	case T_BITOR:
             visit = visitor->visit_add_op;
             break;
-        case T_AND:
+        case T_STAR:
+        case T_SLASH:
+        case T_LOGICAND:
+	case T_BITAND:
             visit = visitor->visit_mul_op;
             break;
-        case T_EQUAL:
-        case T_NOTEQUAL:
-        case T_LESSER:
-        case T_GREATER:
-        case T_LESSEREQUAL:
-        case T_GREATEREQUAL:
+        case T_EQ:
+        case T_NE:
+        case T_LT:
+        case T_GT:
+        case T_LE:
+        case T_GE:
             visit = visitor->visit_rel_op;
-            break;
-        case T_NOT:
-            visit = visitor->visit_not_op;
             break;
         default:
             visit = NULL;
@@ -210,3 +248,4 @@ ast_node_accept_children(struct AstNode *self, Visitor *visitor)
     for (temp = self; temp != NULL; temp = temp->sibling)
         ast_node_accept(temp, visitor);
 }
+

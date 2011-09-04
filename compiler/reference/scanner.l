@@ -128,7 +128,7 @@
 [\n]                        { yylloc->first_line = yylloc->last_line = yylineno;
                               yylloc->first_column = 1;
                               yylloc->last_column = 0;
-                            }
+.                            }
 
 .                           { uploc;
                               fprintf (stderr,

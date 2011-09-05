@@ -1,0 +1,45 @@
+MOV r0, 1
+MOV r1, 0
+STM r0, r1
+MOV r2, 1
+MOV r3, 1
+STM r2, r3
+MOV r4, 1
+LDM r4, r5
+MOV r6, 50
+SUB r5, r6, r7
+BRAB r7, 45
+MOV r8, 1
+LDM r8, r9
+MOV r10, 0
+LDM r10, r11
+ADD r11, r10, r12
+MOV r13, 2
+STM r12, r13
+MOV r14, 1
+LDM r14, r15
+MOV r16, 0
+STM r15, r16
+MOV r17, 2
+LDM r17, r18
+MOV r19, 1
+STM r18, r19
+MOV r20, 1
+LDM r20, r21
+MOV r22, 2
+SUB r21, r22, r23
+BRANZ r23, 35
+MOV r24, 23
+MOV r25, 3
+STM r24, r25
+JMP 35
+MOV r26, 1
+LDM r26, r27
+MOV r28, 10
+SUB r28, r27, r29
+BRAB r29, 44
+MOV r30, 40
+MOV r31, 3
+STM r30, r31
+JMP 44
+JMP 6

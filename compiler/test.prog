@@ -1,6 +1,6 @@
 program testme;
 
-int motor_speed, last_command_time, current_time;
+int motor_speed, last_command_time, current_time, motor_index;
 bool motor_running;
 
 proc start_motor(int motor_index)
@@ -17,5 +17,19 @@ if( motor_index < 0 )
 	motor_index = 0;		
 }
 
+start_motor(motor_index);
 motor_running = true;
+
+if( last_command_time < 0 )
+	if( current_time < 0 )
+		current_time = 0;
+
+if( motor_running )
+	last_command_time = current_time;
+
+motor_index = 1;
+motor_index = motor_index + 1;
+
+last_command_time = (last_command_time + 3) * current_time + 2 * 3;
+
 

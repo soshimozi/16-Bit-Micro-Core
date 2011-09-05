@@ -30,10 +30,6 @@
 			  	yylval->type = type_get_from_lexeme(yytext);
 			  	return TYPE_IDENTIFIER;
 			}
-">="			{ uploc; return T_GE; }
-"<="			{ uploc; return T_LE; }
-"=="			{ uploc; return T_EQ; }
-"!="			{ uploc; return T_NE; }
 "while"			{ uploc; return T_WHILE; }
 "if"			{ uploc; return T_IF; }
 "else"			{ uploc; return T_ELSE; }
@@ -42,21 +38,28 @@
 "="			{ uploc; return T_ASSIGN; }
 "("			{ uploc; return T_LPAR; }
 ")"			{ uploc; return T_RPAR; }
-"+"			{ uploc; return T_PLUS; }
-"-"			{ uploc; return T_MINUS; }
-"*"			{ uploc; return T_STAR; }
-"/"			{ uploc; return T_SLASH; }
-"&&"			{ uploc; return T_LOGICAND; }
-"&"			{ uploc; return T_BITAND; }
-"||"			{ uploc; return T_LOGICOR; }
-"|"			{ uploc; return T_BITOR; }
-">"			{ uploc; return T_GT; }
-"<"			{ uploc; return T_LT; }
+
+">="			{ uploc; yylval->lexeme=strdup(yytext); return T_GE; }
+"<="			{ uploc; yylval->lexeme=strdup(yytext); return T_LE; }
+"=="			{ uploc; yylval->lexeme=strdup(yytext); return T_EQ; }
+"!="			{ uploc; yylval->lexeme=strdup(yytext); return T_NE; }
+"+"			{ uploc; yylval->lexeme=strdup(yytext); return T_PLUS; }
+"-"			{ uploc; yylval->lexeme=strdup(yytext); return T_MINUS; }
+"*"			{ uploc; yylval->lexeme=strdup(yytext); return T_STAR; }
+"/"			{ uploc; yylval->lexeme=strdup(yytext); return T_SLASH; }
+"&&"			{ uploc; yylval->lexeme=strdup(yytext); return T_LOGICAND; }
+"&"			{ uploc; yylval->lexeme=strdup(yytext); return T_BITAND; }
+"||"			{ uploc; yylval->lexeme=strdup(yytext); return T_LOGICOR; }
+"|"			{ uploc; yylval->lexeme=strdup(yytext); return T_BITOR; }
+">"			{ uploc; yylval->lexeme=strdup(yytext); return T_GT; }
+"<"			{ uploc; yylval->lexeme=strdup(yytext); return T_LT; }
+
 ";"			{ uploc; return T_SEMICOLON; }
 "."			{ uploc; return T_DOT; }
 "{"			{ uploc; return T_LBRACE; }
 "}"			{ uploc; return T_RBRACE; }
 ":"			{ uploc; return T_COLON; }
+
 "true"|"false"		{ 
 				uploc; 
 			  	yylval->boolean=CAST_BOOLEAN(yytext);
@@ -69,6 +72,7 @@
 			}
 [0-9]+                 	{ 
 				uploc; 
+				yylval->integer=atoi(yytext);
 				return INT_LITERAL; 
 			}
 [A-Za-z][A-Za-z0-9_]*  	{ 

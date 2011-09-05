@@ -61,12 +61,7 @@ void
 typecheck_visit_programdecl (struct _Visitor *visitor, struct AstNode *node)
 {
     node->children->symbol->decl_linenum = node->linenum;
-
-    //struct AstNode *child;
-    //for (child = node->children; child != NULL; child = child->sibling) {
-    //    ast_node_accept(child, visitor);
-    
-   ast_node_accept(node->children, visitor);
+    ast_node_accept(node->children, visitor);
 }
 
 void
@@ -128,9 +123,6 @@ typecheck_visit_procfunc (struct _Visitor *visitor, struct AstNode *node)
 void
 typecheck_visit_param_list(struct _Visitor *visitor, struct AstNode *node)
 {
-	fprintf(stderr, "About to visit param_list\n");
-	fprintf(stderr, "node: %x, node->symbol: %x\n", (unsigned)node, (unsigned)node->symbol);
-
     int i;
     struct AstNode *child;
 

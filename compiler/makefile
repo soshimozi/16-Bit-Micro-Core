@@ -7,12 +7,15 @@ CFLAGS=-ggdb
 LIBS=
 PARSER=parser
 SCANNER=scanner
-OBJS=$(SCANNER).o $(PARSER).o ast.o base.o symbol_table.o typecheck_visitor.o graphprinter_visitor.o 
+OBJS=$(SCANNER).o $(PARSER).o ast.o base.o symbol_table.o typecheck_visitor.o graphprinter_visitor.o llvm_codegen_visitor.o
 PROGRAM=compiler
 
 all: $(OBJS)
 	$(CC) $(LIBS) $(OBJS) -o $(PROGRAM)
 
+llvm_codegen_visitor.o: llvm_codegen_visitor.c llvm_codegen_visitor.h
+	$(CC) $(CFLAGS) llvm_codegen_visitor.c -c
+	
 graphprinter_visitor.o: graphprinter_visitor.c graphprinter_visitor.h
 	$(CC) $(CFLAGS) graphprinter_visitor.c -c
 

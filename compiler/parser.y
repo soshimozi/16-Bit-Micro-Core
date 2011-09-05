@@ -11,7 +11,7 @@
 
 #include "typecheck_visitor.h"
 #include "graphprinter_visitor.h"
-
+#include "llvm_codegen_visitor.h"
 
 
 extern FILE *yyin;
@@ -681,7 +681,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Too many errors to compile.\n");
 	}
 
-	visitor = graphprinter_new();
+	visitor = llvm_codegen_new();
 
 	ast_node_accept(ast, visitor);
 

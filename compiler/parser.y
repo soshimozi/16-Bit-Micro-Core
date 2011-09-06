@@ -10,9 +10,17 @@
 
 
 #include "typecheck_visitor.h"
+#include "simpleprinter_visitor.h"
 #include "graphprinter_visitor.h"
+#include "c_codegen_visitor.h"
 #include "llvm_codegen_visitor.h"
 
+bool simple_flag = FALSE;
+bool graph_flag = FALSE;
+bool c_flag = FALSE;
+bool llvm_flag = FALSE;
+
+int opts;
 
 extern FILE *yyin;
 
@@ -49,10 +57,8 @@ static struct AstNode *ast;
 %nonassoc IFX
 %nonassoc T_ELSE
 
-%left <lexeme> T_BITOR
-%left <lexeme> T_LOGICOR
-%left <lexeme> T_BITAND
-%left <lexeme> T_LOGICAND
+%left <lexeme> T_OR
+%left <lexeme> T_AND
 %left <lexeme> T_EQ T_NE
 %left <lexeme> T_LT T_GT T_LE T_GE
 %left <lexeme> T_PLUS T_MINUS
@@ -528,17 +534,10 @@ add_op:
 		                        yylloc.last_line, NULL);
 		$$ = ast_node;
 	}
-	| T_BITOR	
+	| T_OR	
 	{
 		struct AstNode *ast_node;
-		ast_node = ast_node_new($1, T_BITOR, INTEGER,
-		                        yylloc.last_line, NULL);
-		$$ = ast_node;
-	}
-	| T_LOGICOR
-	{
-		struct AstNode *ast_node;
-		ast_node = ast_node_new($1, T_LOGICOR, INTEGER,
+		ast_node = ast_node_new($1, T_OR, INTEGER,
 		                        yylloc.last_line, NULL);
 		$$ = ast_node;
 	}
@@ -559,17 +558,10 @@ mul_op:
 		                        yylloc.last_line, NULL);
 		$$ = ast_node;
 	}
-	| T_BITAND
+	| T_AND
 	{
 		struct AstNode *ast_node;
-		ast_node = ast_node_new($1, T_BITAND, INTEGER,
-		                        yylloc.last_line, NULL);
-		$$ = ast_node;
-	}
-	| T_LOGICAND
-	{
-		struct AstNode *ast_node;
-		ast_node = ast_node_new($1, T_LOGICAND, INTEGER,
+		ast_node = ast_node_new($1, T_AND, INTEGER,
 		                        yylloc.last_line, NULL);
 		$$ = ast_node;
 	}
@@ -662,28 +654,84 @@ static void yyerror(const char *msg)
 
 int main(int argc, char **argv)
 {
-	if (argc > 1)
-		yyin = fopen(argv[1], "r");
-	else
-		yyin = stdin;
+    Visitor *visitor;
 
-	/*yylloc.first_line = yylloc.last_line = 1;
-	yylloc.first_column = yylloc.last_column = 0;*/
+    opterr = 0;
 
-	yyparse();
+    while ((opts = getopt (argc, argv, "sgcl")) != -1) {
+        switch (opts) {
+            case 's':
+                simple_flag = TRUE;
+                break;
+            case 'g':
+                graph_flag = TRUE;
+                break;
+            case 'c':
+                c_flag = TRUE;
+                break;
+            case 'l':
+                llvm_flag = TRUE;
+                break;
+            /*case 'o':
+                output = optarg;
+                break;
+            case '?':
+                if (optopt == 'o')
+                    fprintf (stderr, "Option -%c requires an argument.\n",
+                             optopt);
+                else if (isprint (optopt))
+                    fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+                else
+                    fprintf (stderr,
+                             "Unknown option character `\\x%x'.\n", optopt);
+            */
+            default:
+                return 1;
+        }
+    }
 
-	Visitor *visitor;
+    if (argc > optind)
+        yyin = fopen(argv[optind], "r");
+    else
+        yyin = stdin;
 
-	visitor = typecheck_new();
-	ast_node_accept(ast, visitor);
-	
-	if(ast_node_check_errors(ast)) {
-		fprintf(stderr, "Too many errors to compile.\n");
-	}
+    /*yylloc.first_line = yylloc.last_line = 1;
+    yylloc.first_column = yylloc.last_column = 0;*/
 
-	visitor = llvm_codegen_new();
+    yyparse();
 
-	ast_node_accept(ast, visitor);
+    /* Verificacao de tipos. */
+    visitor = typecheck_new();
+    ast_node_accept(ast, visitor);
 
-	return 0;
+    if (ast_node_check_errors(ast)) {
+        fprintf(stderr, "Too many errors to compile.\n");
+        if (!graph_flag)
+            return 1;
+    }
+
+    /* Mostra estrutura da AST em forma de texto. */
+    if (simple_flag)
+        visitor = simpleprinter_new();
+
+    /* Desenha grafo da AST. */
+    else if (graph_flag)
+        visitor = graphprinter_new();
+
+    /* Gera codigo em linguagem C. */
+    else if (c_flag)
+        visitor = c_codegen_new();
+
+    /* Gera codigo em assembly LLVM. */
+    else if (llvm_flag)
+        visitor = llvm_codegen_new();
+
+    else
+        visitor = NULL;
+
+    if (visitor != NULL)
+        ast_node_accept(ast, visitor);
+
+    return 0;
+
 }

@@ -47,10 +47,8 @@
 "-"			{ uploc; yylval->lexeme=strdup(yytext); return T_MINUS; }
 "*"			{ uploc; yylval->lexeme=strdup(yytext); return T_STAR; }
 "/"			{ uploc; yylval->lexeme=strdup(yytext); return T_SLASH; }
-"&&"			{ uploc; yylval->lexeme=strdup(yytext); return T_LOGICAND; }
-"&"			{ uploc; yylval->lexeme=strdup(yytext); return T_BITAND; }
-"||"			{ uploc; yylval->lexeme=strdup(yytext); return T_LOGICOR; }
-"|"			{ uploc; yylval->lexeme=strdup(yytext); return T_BITOR; }
+"&&"			{ uploc; yylval->lexeme=strdup(yytext); return T_AND; }
+"||"			{ uploc; yylval->lexeme=strdup(yytext); return T_OR; }
 ">"			{ uploc; yylval->lexeme=strdup(yytext); return T_GT; }
 "<"			{ uploc; yylval->lexeme=strdup(yytext); return T_LT; }
 

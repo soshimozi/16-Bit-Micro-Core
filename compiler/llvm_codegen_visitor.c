@@ -608,18 +608,12 @@ llvm_codegen_visit_binary_op (struct _Visitor *visitor, struct AstNode *node)
 {
     /* FIXME *printf("; %%%d = \n", stack_size + 1);*/
     switch (node->kind) {
-        case T_LOGICOR:
-            printf(TAB"logic or");
+        case T_OR:
+            printf(TAB"or");
             break;
-	case T_BITOR:
-	    printf(TAB"bit or");
+	case T_AND:
+	   printf(TAB"and");
 	   break;
-	case T_LOGICAND:
-	   printf(TAB"logic and");
-	   break;
-        case T_BITAND:
-            printf(TAB"bit and");
-            break;
         case T_EQ:
             printf(TAB"icmp eq");
             break;

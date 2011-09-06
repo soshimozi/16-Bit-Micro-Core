@@ -215,14 +215,12 @@ ast_node_accept(struct AstNode *self, Visitor *visitor)
             break;
         case T_PLUS:
         case T_MINUS:
-        case T_LOGICOR:
-	case T_BITOR:
+        case T_OR:
             visit = visitor->visit_add_op;
             break;
         case T_STAR:
         case T_SLASH:
-        case T_LOGICAND:
-	case T_BITAND:
+	case T_AND:
             visit = visitor->visit_mul_op;
             break;
         case T_EQ:

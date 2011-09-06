@@ -7,7 +7,7 @@ CFLAGS=-ggdb
 LIBS=
 PARSER=parser
 SCANNER=scanner
-OBJS=$(SCANNER).o $(PARSER).o ast.o base.o symbol_table.o typecheck_visitor.o graphprinter_visitor.o llvm_codegen_visitor.o
+OBJS=$(SCANNER).o $(PARSER).o ast.o base.o symbol_table.o typecheck_visitor.o graphprinter_visitor.o llvm_codegen_visitor.o simpleprinter_visitor.o c_codegen_visitor.o
 PROGRAM=compiler
 
 all: $(OBJS)
